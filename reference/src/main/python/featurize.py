@@ -5,9 +5,8 @@ import pickle
 import re
 from collections import OrderedDict, Counter
 from sklearn.feature_extraction.text import CountVectorizer
-
+from typing import List, NoReturn, Tuple, Dict, Optional, TypeVar, Callable
 import config
-
 
 class Vocab:
     def __init__(self):
@@ -22,7 +21,8 @@ class Vocab:
     def add_and_get_index(self, word):
         if not (word in self.vocab):
             self.words.append(word)
-            self.vocab[word] = [0, len(self.vocab) + 1 + config.NUM_FEATURE_MIN]
+            self.vocab[word] = [
+                0, len(self.vocab) + 1 + config.NUM_FEATURE_MIN]
         value = self.vocab[word]
         value[0] += 1
         return value[1]
@@ -39,25 +39,23 @@ class Vocab:
             logging.info(f"Dumped vocab with size {len(self.vocab)}")
 
     @staticmethod
-    def load(working_dir, init=False):
-        global vocab_instance
-        if not init:
-            try:
-                with open(
-                        os.path.join(working_dir, config.VOCAB_FILE), "rb"
-                ) as out:
-                    [vocab_instance.vocab, vocab_instance.words] = pickle.load(out)
-                logging.info(f"Loaded vocab with size {len(vocab_instance.vocab)}")
-            except:
-                logging.info("Initialized vocab.")
-                pass
+    def load(working_dir):
+        tmp = Vocab()
+        if os.path.exists(os.path.join(working_dir, config.VOCAB_FILE)):
+            with open(
+                    os.path.join(working_dir, config.VOCAB_FILE), "rb"
+            ) as out:
+                [tmp.vocab, tmp.words] = pickle.load(out)
+                logging.info(f"Loaded vocab with size {len(tmp.vocab)}")
+        return tmp
 
 
-vocab_instance = Vocab()
-vocab = vocab_instance
+Ast = TypeVar("AST", list, dict)
 
 # 寻找ast子树最左的叶子结点
-def get_leftmost_leaf(ast):
+
+
+def get_leftmost_leaf(ast: Ast) -> Tuple[bool, Optional[str]]:
     if isinstance(ast, list):
         for elem in ast:
             (success, token) = get_leftmost_leaf(elem)
@@ -70,7 +68,7 @@ def get_leftmost_leaf(ast):
 
 
 # 局部变量的位置上下文，区分不同 "#VAR"
-def get_var_context(p_idx, p_label, p_ast):
+def get_var_context(p_idx: int, p_label: str, p_ast: Ast) -> str:
     # “#.#” 特殊情况，见论文
     if p_label == "#.#":
         return get_leftmost_leaf(p_ast[p_idx + 2])[1]
@@ -79,7 +77,14 @@ def get_var_context(p_idx, p_label, p_ast):
 
 
 # 向feature_list添加特征key的索引值，初始化阶段如果vocab中不存在特征key，先将其加入vocab
-def append_feature_index(is_init, is_counter, key, feature_list, c):
+def append_feature_index(
+    is_init: bool,
+    is_counter: bool,
+    key: str,
+    vocab: Vocab,
+    feature_list: List[int],
+    c: Counter
+) -> NoReturn:
     if is_init:
         n = vocab.add_and_get_index(key)
     else:
@@ -92,8 +97,15 @@ def append_feature_index(is_init, is_counter, key, feature_list, c):
 
 
 def append_feature_pair(
-        is_init, is_counter, key, feature_list, leaf_features_count, sibling_idx, leaf_idx
-):
+        is_init: bool,
+        is_counter: bool,
+        key: str,
+        vocab: Vocab,
+        feature_list: List[int],
+        leaf_features_count: List[Counter],
+        sibling_idx: int,
+        leaf_idx: int
+) -> NoReturn:
     if is_init:
         n = vocab.add_and_get_index(key)
     else:
@@ -107,45 +119,50 @@ def append_feature_pair(
         feature_list.append(n)
 
 
-def feature_list_to_doc(feature_list):
+def feature_list_to_doc(feature_list: List[int]) -> str:
     return " ".join([str(y) for y in feature_list])
 
 
-def counter_vectorize(get_records_by_ids, wpath):
+def counter_vectorize(get_records_by_ids: Callable[[List[int]], dict], wpath: str) -> NoReturn:
     quantity = config.RECORD_QUANTITY
     vectorizer = CountVectorizer(min_df=1, binary=True)
     documents = []
-    cookie = int(quantity / 10)
+    cookie = int(quantity / 50)
     i = 0
     while i + cookie <= quantity:
-        features = [record["features"] for record in get_records_by_ids([i for i in range(i, i + cookie)])]
+        features = [record["features"] for record in get_records_by_ids(
+            [i for i in range(i, i + cookie)])]
         docs = [feature_list_to_doc(feature) for feature in features]
         documents.extend(docs)
         i += cookie
         logging.info("load {i} documents.".format(i=i))
     if i < quantity:
-        features = [record["features"] for record in get_records_by_ids([i for i in range(i, i + cookie)])]
+        features = [record["features"] for record in get_records_by_ids(
+            [i for i in range(i, i + cookie)])]
         docs = [feature_list_to_doc(feature) for feature in features]
         documents.extend(docs)
         logging.info("load {i} documents.".format(i=quantity))
     counter_matrix = vectorizer.fit_transform(documents)
-    logging.info("Finishing Vectorizing feature documents.")
+    logging.info("Finished Vectorizing feature documents.")
     with open(wpath, "wb") as outf:
         pickle.dump((vectorizer, counter_matrix), outf)
     logging.info("Dump vectorizer, counter matrix")
 
 
 leaf_idx = 0
+
+
 def collect_features_aux(
-        ast,
-        feature_list,
-        parents,
-        siblings,
-        var_siblings,
-        leaf_features_count,
-        is_init,
-        is_counter
-):
+        ast: Ast,
+        feature_list: List[int],
+        parents: List[Tuple[int, str, Ast]],
+        siblings: List[Tuple[int, str]],
+        var_siblings: Dict[str, List[Tuple[int, str]]],
+        leaf_features_count: List[Counter],
+        is_init: bool,
+        is_counter: bool,
+        vocab: Vocab
+) -> NoReturn:
     global leaf_idx
     # ast为list时，表示这是棵子树
     # ast[0]["label"] ：子树根结点的字符串表示，ast[1]及之后的元素为该子树的子结点
@@ -162,7 +179,8 @@ def collect_features_aux(
                 var_siblings,
                 leaf_features_count,
                 is_init,
-                is_counter
+                is_counter,
+                vocab
             )
             parents.pop()
             i += 1
@@ -183,7 +201,8 @@ def collect_features_aux(
                 c = Counter()
                 leaf_features_count.append(c)
             # 向feature_list加入token feature的索引值
-            append_feature_index(is_init, is_counter, key, feature_list, c)
+            append_feature_index(is_init, is_counter, key,
+                                 vocab, feature_list, c)
 
             # parent feature，自下而上就近提取
             count = 0
@@ -192,7 +211,8 @@ def collect_features_aux(
                     count += 1
                     # key为p的第i个孩子
                     key2 = p + str(i) + ">" + key
-                    append_feature_index(is_init, is_counter, key2, feature_list, c)
+                    append_feature_index(
+                        is_init, is_counter, key2, vocab, feature_list, c)
                     if count >= config.N_PARENTS:
                         break
 
@@ -215,6 +235,7 @@ def collect_features_aux(
                             is_init,
                             is_counter,
                             key2,
+                            vocab,
                             feature_list,
                             leaf_features_count,
                             var_sibling_idx,
@@ -235,6 +256,7 @@ def collect_features_aux(
                         is_init,
                         is_counter,
                         key2,
+                        vocab,
                         feature_list,
                         leaf_features_count,
                         sibling_idx,
@@ -245,9 +267,9 @@ def collect_features_aux(
                 siblings.append((leaf_idx - 1, key))
 
 
-def collect_features_as_list(ast, is_init, is_counter):
-    feature_list = []
-    leaf_features_count = []
+def collect_features_as_list(ast: Ast, is_init: bool, is_counter: bool, vocab: Vocab) -> list:
+    feature_list: List[int] = []
+    leaf_features_count: List[Counter] = []
     global leaf_idx
     leaf_idx = 0
     collect_features_aux(
@@ -258,34 +280,11 @@ def collect_features_as_list(ast, is_init, is_counter):
         dict(),
         leaf_features_count,
         is_init,
-        is_counter
+        is_counter,
+        vocab
     )
     if is_counter:
         return leaf_features_count
     else:
         return feature_list
-
-
-def featurize_query_record(record):
-    record["features"] = collect_features_as_list(record["ast"], False, False)
-    record["index"] = -1
-    return record
-            
-
-
-def featurize_ast_file(rpath, working_dir):
-    with open(rpath, "r") as inp:
-        wpath = os.path.join(working_dir, config.FEATURES_FILE)
-        with open(wpath, "w") as outp:
-            i = 0
-            for line in inp:
-                obj = ujson.loads(line)
-                obj["features"] = collect_features_as_list(obj["ast"], True, False)
-                obj["index"] = i
-                outp.write(ujson.dumps(obj))
-                outp.write('\n')
-                i += 1
-            logging.info("Featurized {i} methods".format(i = i))
-            vocab.dump(working_dir)
-            logging.info("Dumped feature vocab.")
 

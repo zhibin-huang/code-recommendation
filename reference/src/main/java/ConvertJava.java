@@ -3,7 +3,9 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -72,6 +74,7 @@ public class ConvertJava {
 
   public void serializeFile(String f, String startSymbol) {
     try {
+      thisFileName = f;
       totalFiles++;
       stackDepth = 0;
       CharStream charStream = CharStreams.fromFileName(f);
@@ -90,15 +93,17 @@ public class ConvertJava {
       }
       successFullFiles++;
     } catch (Exception e) {
-      System.out.println(
-          "Total processed files, Successfully processed file, total methods: "
-              + totalFiles
-              + ", "
-              + successFullFiles
-              + ", "
-              + totalMethods);
-      System.err.println("Parser Exception: " + e);
-      e.printStackTrace(); // so we can get the stack trace
+      // System.out.println(
+      //     "Total processed files, Successfully processed file, total methods: "
+      //         + totalFiles
+      //         + ", "
+      //         + successFullFiles
+      //         + ", "
+      //         + totalMethods
+      //         + ", "
+      //         + thisFileName);
+      // System.err.println("Parser Exception: " + e);
+      // e.printStackTrace(); // so we can get the stack trace
     }
   }
 
@@ -127,6 +132,7 @@ public class ConvertJava {
   private boolean childHasLeaf;
   private String thisClassName;
   private String thisMethodName;
+  private String thisFileName;
   private int beginLine, endLine;
   private PrintWriter writer;
   private int stackDepth = 0;
@@ -161,6 +167,7 @@ public class ConvertJava {
         }
       }
       JSONObject tmp = new JSONObject();
+      tmp.put("path", thisFileName);
       tmp.put("class", thisClassName);
       tmp.put("method", thisMethodName);
       tmp.put("beginline", beginLine);
@@ -277,9 +284,24 @@ public class ConvertJava {
     else {
       p.openWriter(args[1]);
     }
-    if (Files.isRegularFile(new File(args[2]).toPath())) {
-      p.serializeFile(args[2], args[0]);
-    } else {
+    
+    File inputf = new File(args[2]);
+    if(Files.isRegularFile(inputf.toPath())){
+      if (inputf.toPath().toString().endsWith(".java")) {
+        p.serializeFile(args[2], args[0]);
+      } 
+      else if(inputf.toPath().toString().endsWith(".txt")){
+        BufferedReader in = new BufferedReader(new FileReader(args[2]));
+        String line;
+        int i = 0;
+        while((line = in.readLine()) != null){
+          p.serializeFile(line, args[0]);
+          System.out.println("Has parsed: " + i);
+          i++;
+        }
+      }
+    }
+    else {
       Files.walk(Paths.get(args[2]))
           .filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".java"))
           .forEach(path -> p.serializeFile(path.normalize().toString(), args[0]));

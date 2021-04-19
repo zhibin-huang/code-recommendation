@@ -138,9 +138,9 @@ json prune_last_jd(const vector<json> &records, const json &record2) {
     counter tmp = list_toCounter(record["features"]);
     other_features_count.push_back(tmp);
   }
-  py::object featurize = py::module_::import("featurize");
+  py::object featurize = py::module_::import("entry");
   py::object collect_features_as_list =
-      featurize.attr("collect_features_as_list");
+      featurize.attr("collect_features_as_list_wapperForCpp");
   vector<counter> leaves_features_count =
       collect_features_as_list(record2["ast"], false, true)
           .cast<vector<counter>>();
@@ -189,39 +189,19 @@ vector<candidate_tuple> prune_parallel(const json &query_record,
                                        const vector<json> &similar_records,
                                        const vector<double> &scores) {
   vector<candidate_tuple> candidate_records;
-   //thread t[2];
   for (int i = 0; i < similar_records.size(); i++) {
-    // cout << "start" << i << endl;
-    //t[i % 2] = thread(
     [&](nl::json similar_record, double score) {
-      // cout << "entering process" << endl;
       nl::json pruned_record =
           prune_last_jd(vector<json>(1, query_record), similar_record);
-      // cout << pruned_record <<endl;
-      // cout << "finished pruning" << endl;
       counter c1 = list_toCounter(query_record["features"]),
               c2 = list_toCounter(pruned_record["features"]);
-      // cout << "finished counting" << endl;
       double prune_score = jaccard(c1, c2);
-      // cout << prune_score << endl;
-      // mutex m;
       if (prune_score > min_pruned_score) {
-        // m.lock();
         candidate_records.push_back(
             candidate_tuple(similar_record, score, pruned_record, prune_score));
-        // cout << "finished push_back" << endl;
-        // m.unlock();
       }
     }(similar_records[i], scores[i]);
-    // ,similar_records[i], scores[i]);
-    //  if ((i + 1) % 2 == 0) {
-    //    cout << "waiting..." << endl;
-    //    for (int i = 0; i < 2; i++) {
-    //      if(t[i].joinable()) t[i].join();
-    //    }
-    //  }
   }
-  // cout << "finished." << endl;
   return candidate_records;
 }
 

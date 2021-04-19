@@ -6,8 +6,8 @@ time mvn exec:java -Dexec.mainClass=ConvertJava -Dexec.args="compilationUnit /Us
 # convert query_file.java into ast in json format
 time mvn exec:java -Dexec.mainClass=ConvertJava -Dexec.args="compilationUnit example_data/example_query.json example_data/example_query.java"
 
-# featurize asts
-time python3 src/main/python/entry.py -c /Users/huangzhibin/Desktop/jsrc.json -d ./dataset/tmpout
+# featurize corpus
+time python3 src/main/python/entry.py -c ./repos -d ./dataset/tmpout
 # run experiments assuming that featurization has already been done
 time python3 -m cProfile -o dataset/tmpout/profiler src/main/python/entry.py -d dataset/tmpout -t
 # search code at index 83403 of the corpus
