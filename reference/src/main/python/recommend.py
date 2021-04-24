@@ -45,7 +45,7 @@ def ast_to_code_print_lines(ast, line_list, token_list):
 
 
 # def print_features(fstr):
-#     print(" ".join([vocab.get_word(int(k)) for k in fstr]))
+    # print(" ".join([vocab.get_word(int(k)) for k in fstr]))
 
 
 # 计算点积
@@ -54,49 +54,49 @@ def my_similarity_score(M1, M2):
 
 
 # def copy_leaf_dummy(ast):
-#     return {"token": " ... ", "leading": ast["leading"], "trailing": ast["trailing"]}
+    # return {"token": " ... ", "leading": ast["leading"], "trailing": ast["trailing"]}
 
 
 # 从ast中获得含有leaf_features的子树（砍掉已成为none的token）
 # def prune_ast(ast, leaf_features, leaf_idx):
-#     if isinstance(ast, list):
-#         no_leaf = True
-#         ret = []
-#         for elem in ast:
-#             (flag, tmp, leaf_idx) = prune_ast(elem, leaf_features, leaf_idx)
-#             ret.append(tmp)
-#             no_leaf = no_leaf and flag
-#         # 子树的叶结点token都被砍完了（flag每次返回true），则丢弃整棵子树
-#         # 否则返回修剪好的ast
-#         if no_leaf:
-#             return (True, None, leaf_idx)
-#         else:
-#             return (False, ret, leaf_idx)
-#     elif isinstance(ast, dict) and "label" not in ast:
-#         if "leaf" in ast and ast["leaf"]:
-#             leaf_idx += 1
-#             # 去除ast中要被砍掉的token，被砍的token变成 "..."
-#             if len(leaf_features[leaf_idx - 1])== 0:
-#                 return (True, copy_leaf_dummy(ast), leaf_idx)
-#             else:
-#                 return (False, ast, leaf_idx)
-#         else:
-#             return (True, ast, leaf_idx)
-#     else:
-#         return (True, ast, leaf_idx)
+    # if isinstance(ast, list):
+    #     no_leaf = True
+    #     ret = []
+    #     for elem in ast:
+    #         (flag, tmp, leaf_idx) = prune_ast(elem, leaf_features, leaf_idx)
+    #         ret.append(tmp)
+    #         no_leaf = no_leaf and flag
+    #     # 子树的叶结点token都被砍完了（flag每次返回true），则丢弃整棵子树
+    #     # 否则返回修剪好的ast
+    #     if no_leaf:
+    #         return (True, None, leaf_idx)
+    #     else:
+    #         return (False, ret, leaf_idx)
+    # elif isinstance(ast, dict) and "label" not in ast:
+    #     if "leaf" in ast and ast["leaf"]:
+    #         leaf_idx += 1
+    #         # 去除ast中要被砍掉的token，被砍的token变成 "..."
+    #         if len(leaf_features[leaf_idx - 1])== 0:
+    #             return (True, copy_leaf_dummy(ast), leaf_idx)
+    #         else:
+    #             return (False, ast, leaf_idx)
+    #     else:
+    #         return (True, ast, leaf_idx)
+    # else:
+    #     return (True, ast, leaf_idx)
 
 
 # #Jaccard 相似系数
 # def jaccard(counter1, counter2):
-#     return sum((counter1 & counter2).values()) / sum((counter1 | counter2).values())
+    # return sum((counter1 & counter2).values()) / sum((counter1 | counter2).values())
 
 
 # def copy_record(record2, ast, features):
-#     ret = dict(record2)
-#     ret["ast"] = ast
-#     ret["features"] = features
-#     ret["index"] = -1
-#     return ret
+    # ret = dict(record2)
+    # ret["ast"] = ast
+    # ret["features"] = features
+    # ret["index"] = -1
+    # return ret
 
 
 # 测试用
@@ -303,7 +303,7 @@ def cluster_and_intersect(
                 if not is_subset:
                     logging.info("recommending")
                     logging.info("Pruning {len} {t}".format(len=len(tuple), t=tuple))
-                    pruned_record = candidate_records[tuple[0]][2]
+                    pruned_record = candidate_records[tuple[0]][0]
                     # Intersect((i1,...,ij,ij+1),q)=Prune(F(N2(ij+1))∪F(q),Intersect((i1,...,ij),q))
                     for j in range(1, len(tuple)):
                         pruned_record = prune_last_jd(

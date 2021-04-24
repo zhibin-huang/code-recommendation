@@ -8,7 +8,7 @@ import linecache
 import config
 from featurize import Vocab, collect_features_as_list, counter_vectorize
 from recommend import print_similar_and_completions
-from test_elastic import ES
+from elastic_api import ES
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -85,9 +85,9 @@ def sample_n_records(n, total_len):
                     ret_indices.append(i)
                     ret_records.append(record)
         else:
-            logging.info("Sampled records")
+            logging.info("Sampled {len} records".format(len = len(ret_indices)))
             return (ret_indices, ret_records)
-    logging.info("Sampled records")
+    logging.info("Sampled {len} records".format(len = len(ret_indices)))
     return (ret_indices, ret_records)
 
 

@@ -100,7 +100,7 @@ class ES():
             print("TYPE:", response['error']['type'])
 
     def bulk(self, actions):
-        with open("log.txt", "w") as f:
+        with open("dataset/tmpout/log.txt", "w") as f:
             for success, info in helpers.parallel_bulk(client=self.instance, actions=actions, raise_on_error=False):
                 if not success:
                     f.write('A document failed:\n' + str(info))

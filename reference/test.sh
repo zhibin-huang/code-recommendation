@@ -16,5 +16,7 @@ time python3 src/main/python/entry.py -d ./dataset/tmpout -i 83403
 time python3 src/main/python/entry.py -d ./dataset/tmpout -f query_file.json
 # compile cpp module
 time src/main/python/compile.sh src/main/python/cpp_module
+# read profile
+python3 src/main/python/read_profiler.py
 # start service
 python3  src/main/python/entry.py -d ./dataset/tmpout
