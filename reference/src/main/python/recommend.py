@@ -336,16 +336,11 @@ def print_similar_and_completions(query_record, get_records_by_ids, vectorizer, 
         )
         id = 0
         for clustered_record in clustered_records:
-            results.append("/*---------- suggested code completion {id} ----------*/\n".format(id = id + 1))
             # idxs = ({clustered_record[1:]}), score = {candidate_records[clustered_record[1]][3]}")
             # clutered_record[0]: 该cluter求交集的结果，clustered_record[1] : 该cluter里的第一个元素
-            result = ast_to_code_with_full_lines(
+            results.append(ast_to_code_with_full_lines(
                     clustered_record[0]["ast"], clustered_record[1]["ast"]
-                )
-            results[id] += result + "/*-----------------------end-----------------------*/\n\n"
-            id = id + 1
-    if len(results) == 0:
-        results.append("/*-----------很遗憾，对于当前方法，无推荐结果。-------------*/")
+                ))
 
     if config.TEST_ALL:
           print_match_index(query_record, candidate_records)

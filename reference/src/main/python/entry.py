@@ -247,12 +247,11 @@ def run_pipeline(path: str, line: int) -> dict:
             break
     else:
         results = ['// 请将光标移至方法所在行。']
-    return {"recommendation": "".join(results)}
+    return {"recommendation": results}
 
 
 def run_buildIndex(path: str, working_dir: str) -> NoReturn:
     id = config.RECORD_QUANTITY
-
     def get_java(path: str, path_set: set) -> NoReturn:
         if os.path.exists(path):
             for f in os.listdir(path):

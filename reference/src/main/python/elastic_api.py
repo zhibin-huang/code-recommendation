@@ -89,7 +89,7 @@ class ES():
                 }
             }
         }
-        self.instance.indices.delete(index=self.index, ignore=404)
+        #self.instance.indices.delete(index=self.index, ignore=404)
         response = self.instance.indices.create(index=self.index, body=mapping)
         if 'acknowledged' in response:
             if response['acknowledged'] == True:
