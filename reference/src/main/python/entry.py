@@ -14,7 +14,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import subprocess
 from typing import List, NoReturn, Tuple, Dict, Optional, TypeVar
-from multiprocessing import Pool
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -235,7 +234,7 @@ app.add_middleware(
 
 @app.get("/test")
 def run_pipeline(path: str, line: int) -> dict:
-    command = 'java -jar /Users/huangzhibin/code-recommendation/aroma-paper-artifacts/reference/target/ANTLR4SimpleAST-1.0-SNAPSHOT-jar-with-dependencies.jar compilationUnit stdout {inputpath}'.format(
+    command = 'java -jar /Users/huangzhibin/code-recommendation/recommend-algo/reference/target/ANTLR4SimpleAST-1.0-SNAPSHOT-jar-with-dependencies.jar compilationUnit stdout {inputpath}'.format(
         inputpath=path)
     complete = subprocess.run(
         command, check=True, text=True, capture_output=True, shell=True)

@@ -8,6 +8,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from typing import List, NoReturn, Tuple, Dict, Optional, TypeVar, Callable
 import config
 
+
 class Vocab:
     def __init__(self):
         self.vocab = OrderedDict()
@@ -53,8 +54,6 @@ class Vocab:
 Ast = TypeVar("AST", list, dict)
 
 # 寻找ast子树最左的叶子结点
-
-
 def get_leftmost_leaf(ast: Ast) -> Tuple[bool, Optional[str]]:
     if isinstance(ast, list):
         for elem in ast:
@@ -203,7 +202,6 @@ def collect_features_aux(
             # 向feature_list加入token feature的索引值
             append_feature_index(is_init, is_counter, key,
                                  vocab, feature_list, c)
-
             # parent feature，自下而上就近提取
             count = 0
             for (i, p, p_ast) in reversed(parents):
@@ -287,4 +285,3 @@ def collect_features_as_list(ast: Ast, is_init: bool, is_counter: bool, vocab: V
         return leaf_features_count
     else:
         return feature_list
-

@@ -10,6 +10,8 @@ logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("elasticsearch").setLevel(logging.WARNING)
 
 # ast还原成代码
+
+
 def ast_to_code_aux(ast, token_list):
     if isinstance(ast, list):
         for elem in ast:
@@ -120,20 +122,21 @@ def find_indices_similar_to_features(
         vectorizer, counter_matrix, feature_lists_doc, num_similars, min_similarity_score
 ):
     doc_counter_vector = vectorizer.transform(feature_lists_doc)
-    len = my_similarity_score(doc_counter_vector, doc_counter_vector).flatten()[0]
+    len = my_similarity_score(
+        doc_counter_vector, doc_counter_vector).flatten()[0]
     cosine_similarities = my_similarity_score(
         doc_counter_vector, counter_matrix
     ).flatten()
     related_docs_indices = [
-                               i
-                               for i in cosine_similarities.argsort()[::-1]
-                               if cosine_similarities[i] > min_similarity_score * len
-                           ][0:num_similars]
+        i
+        for i in cosine_similarities.argsort()[::-1]
+        if cosine_similarities[i] > min_similarity_score * len
+    ][0:num_similars]
     return [(j, cosine_similarities[j]) for j in related_docs_indices]
 
 
 # 将record2修剪成与records集合最相似（以jaccard距离度量）
-#def prune_last_jd(records, record2):
+# def prune_last_jd(records, record2):
     # other_features = [Counter(record["features"]) for record in records]
     # leaves_features_count = collect_features_as_list(record2["ast"], False, True)
     # # 贪心算法选择的近似最优叶结点
@@ -163,7 +166,7 @@ def find_indices_similar_to_features(
     #         else:
     #             done = True
     # if isinstance(records, dict):
-    #     records = [records] 
+    #     records = [records]
     # #print("enter prune_last_jd")
     # out_features = get_out_features(records, record2)
     # pruned_ast = prune_ast(record2["ast"], out_features, leaf_idx=0)[1]
@@ -198,7 +201,7 @@ def find_similar(
         min_pruned_score,
 ):
     #print("Query features: ")
-    #print_features(query_record["features"])
+    # print_features(query_record["features"])
     # 获取候选结果（light-weight search）
     similars = find_indices_similar_to_features(
         vectorizer,
@@ -210,19 +213,25 @@ def find_similar(
     candidate_records = []
     # 修剪候选片段，重新排序 （prune and rerank）
     if len(similars) > 0:
-        similar_records = get_records_by_ids([idx for (idx, score) in similars])
+        similar_records = get_records_by_ids(
+            [idx for (idx, score) in similars])
         scores = [score for (idx, score) in similars]
         # for i, similar_record in enumerate(similar_records):
         #     pruned_record = prune_last_jd([query_record], similar_record)
         #     pruned_score = jaccard(Counter(query_record["features"]), Counter(pruned_record["features"]))
         #     if pruned_score > min_pruned_score:
         #         candidate_records.append((similar_record, scores[i], pruned_record, pruned_score))
-        candidate_records = prune_parallel(query_record, min_pruned_score, similar_records, scores)
-        candidate_records = sorted(candidate_records, key=lambda v: v[3], reverse=True)
-        logging.info("# of similar snippets = {len}".format(len =len(candidate_records)))
+        candidate_records = prune_parallel(
+            query_record, min_pruned_score, similar_records, scores)
+        candidate_records = sorted(
+            candidate_records, key=lambda v: v[3], reverse=True)
+        logging.info("# of similar snippets = {len}".format(
+            len=len(candidate_records)))
     return candidate_records
 
-#records列表内的features交集大小
+# records列表内的features交集大小
+
+
 def find_similarity_score_features_set_un(records):
     features_as_counters = []
     for record in records:
@@ -236,7 +245,7 @@ def find_similarity_score_features_set_un(records):
     return sum(intersection.values())
 
 
-#得到最终推荐的records
+# 得到最终推荐的records
 def cluster_and_intersect(
         query_record, candidate_records, top_n, threshold1, threshold2
 ):
@@ -245,11 +254,10 @@ def cluster_and_intersect(
     if len_candidate > 0:
         ret = []
         acc = []
-        t1 = time.time()
         # 初始一个record作为一个cluster
         for i in range(len_candidate):
-            cs = len(candidate_records[i][0]["features"]) #原始record
-            csq = len(candidate_records[i][2]["features"]) #pruned record
+            cs = len(candidate_records[i][0]["features"])  # 原始record
+            csq = len(candidate_records[i][2]["features"])  # pruned record
             # s(τ) = csq(τ)/|F(Prune(F(q), N2(i1)) )| = 1
             # l(τ) = cs(τ) / csq(τ) > 1.5
             if cs > csq * threshold2:
@@ -269,14 +277,16 @@ def cluster_and_intersect(
                     # 该tuple第一个元素（pruned record）的feature数量
                     qlen = len(pruned_record_list[0]["features"])
                     # 该tuple中所有pruned_record的feature交集大小 csq(τ)
-                    csq = find_similarity_score_features_set_un(pruned_record_list)
+                    csq = find_similarity_score_features_set_un(
+                        pruned_record_list)
                     # s(τ) = csq(τ)/|F(Prune(F(q), N2(i1)) )|
                     # 该tuple中所有pruned_records与第一个record的相似度，度量tuple内聚度
                     pscore = csq / qlen
                     # pscore = find_similarity_score_features_set(record_list1)
                     if pscore > threshold1:
                         # 该tuple中所有原始record的feature交集大小 cs(τ)
-                        cs = find_similarity_score_features_set_un(original_record_list)
+                        cs = find_similarity_score_features_set_un(
+                            original_record_list)
                         # l(τ) = cs(τ)/csq(τ)
                         # 在满足阈值的情况下，l(τ)尽量大，以满足最后结果比query长
                         if cs > threshold2 * csq and cs > maxscore:
@@ -302,14 +312,17 @@ def cluster_and_intersect(
                         break
                 if not is_subset:
                     logging.info("recommending")
-                    logging.info("Pruning {len} {t}".format(len=len(tuple), t=tuple))
+                    logging.info("Pruning {len} {t}".format(
+                        len=len(tuple), t=tuple))
                     pruned_record = candidate_records[tuple[0]][0]
                     # Intersect((i1,...,ij,ij+1),q)=Prune(F(N2(ij+1))∪F(q),Intersect((i1,...,ij),q))
                     for j in range(1, len(tuple)):
                         pruned_record = prune_last_jd(
-                            [query_record, candidate_records[tuple[j]][0]], pruned_record
+                            [query_record, candidate_records[tuple[j]]
+                                [0]], pruned_record
                         )
-                    clustered_records.append([pruned_record, candidate_records[tuple[0]][0]])
+                    clustered_records.append(
+                        [pruned_record, candidate_records[tuple[0]][0]])
                     if len(clustered_records) >= top_n:
                         return clustered_records
     return clustered_records
@@ -339,20 +352,20 @@ def print_similar_and_completions(query_record, get_records_by_ids, vectorizer, 
             # idxs = ({clustered_record[1:]}), score = {candidate_records[clustered_record[1]][3]}")
             # clutered_record[0]: 该cluter求交集的结果，clustered_record[1] : 该cluter里的第一个元素
             results.append(ast_to_code_with_full_lines(
-                    clustered_record[0]["ast"], clustered_record[1]["ast"]
-                ))
+                clustered_record[0]["ast"], clustered_record[1]["ast"]
+            ))
 
     if config.TEST_ALL:
-          print_match_index(query_record, candidate_records)
-          print(
+        print_match_index(query_record, candidate_records)
+        print(
             f"################ query code ################ index = {query_record['index']}"
-          )
-          print(ast_to_code(query_record["ast"]))
-          if query_record["index"] >= 0:
-              print("---------------- extracted from ---------------")
-              record = get_records_by_ids([query_record["index"]])[0]
-              print(ast_to_code(record["ast"]))
-          print("".join(results))
+        )
+        print(ast_to_code(query_record["ast"]))
+        if query_record["index"] >= 0:
+            print("---------------- extracted from ---------------")
+            record = get_records_by_ids([query_record["index"]])[0]
+            print(ast_to_code(record["ast"]))
+        print("".join(results))
     if config.PRINT_SIMILAR:
         j = 0
         for (candidate_record, score, pruned_record, pruned_score) in candidate_records:
