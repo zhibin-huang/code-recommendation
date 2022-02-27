@@ -1,10 +1,12 @@
 .DS_Store
 .vscode
-target
-**/dataset/tmpout
-__pycache__
-reference/repos/
-log.txt
+.classpath
 .settings
-
+target
+__pycache__
+tmpout
+repos
+*.so
+*.dSYM
+*.log
 
