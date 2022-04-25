@@ -5,7 +5,7 @@ from elasticsearch import helpers
 class ES():
     def __init__(self):
         super().__init__()
-        self.instance = Elasticsearch("localhost:9200", timeout = 100)
+        self.instance = Elasticsearch("http://localhost:9200", timeout = 100)
         self.index = "method_records"
 
     def insert_with_id(self, _id, record):
