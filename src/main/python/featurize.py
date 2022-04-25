@@ -1,5 +1,4 @@
 import os
-import ujson
 import logging
 import pickle
 import re
@@ -51,10 +50,10 @@ class Vocab:
         return tmp
 
 
-Ast = TypeVar("AST", list, dict)
+AST = TypeVar("AST", list, dict)
 
 # 寻找ast子树最左的叶子结点
-def get_leftmost_leaf(ast: Ast) -> Tuple[bool, Optional[str]]:
+def get_leftmost_leaf(ast: AST) -> Tuple[bool, Optional[str]]:
     if isinstance(ast, list):
         for elem in ast:
             (success, token) = get_leftmost_leaf(elem)
@@ -67,7 +66,7 @@ def get_leftmost_leaf(ast: Ast) -> Tuple[bool, Optional[str]]:
 
 
 # 局部变量的位置上下文，区分不同 "#VAR"
-def get_var_context(p_idx: int, p_label: str, p_ast: Ast) -> str:
+def get_var_context(p_idx: int, p_label: str, p_ast: AST) -> str:
     # “#.#” 特殊情况，见论文
     if p_label == "#.#":
         return get_leftmost_leaf(p_ast[p_idx + 2])[1]
@@ -152,9 +151,9 @@ leaf_idx = 0
 
 
 def collect_features_aux(
-        ast: Ast,
+        ast: AST,
         feature_list: List[int],
-        parents: List[Tuple[int, str, Ast]],
+        parents: List[Tuple[int, str, AST]],
         siblings: List[Tuple[int, str]],
         var_siblings: Dict[str, List[Tuple[int, str]]],
         leaf_features_count: List[Counter],
@@ -265,7 +264,7 @@ def collect_features_aux(
                 siblings.append((leaf_idx - 1, key))
 
 
-def collect_features_as_list(ast: Ast, is_init: bool, is_counter: bool, vocab: Vocab) -> list:
+def collect_features_as_list(ast: AST, is_init: bool, is_counter: bool, vocab: Vocab) -> list:
     feature_list: List[int] = []
     leaf_features_count: List[Counter] = []
     global leaf_idx
