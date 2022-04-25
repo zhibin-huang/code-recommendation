@@ -17,7 +17,7 @@ from typing import List, NoReturn, Tuple, Dict, Optional, TypeVar
 
 
 logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("elasticsearch").setLevel(logging.WARNING)
+logging.getLogger("elastic_transport").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 

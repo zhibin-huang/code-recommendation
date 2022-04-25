@@ -6,12 +6,8 @@ import config
 from featurize import feature_list_to_doc
 from cpp_module import jaccard, prune_last_jd, prune_parallel
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("elasticsearch").setLevel(logging.WARNING)
 
 # ast还原成代码
-
-
 def ast_to_code_aux(ast, token_list):
     if isinstance(ast, list):
         for elem in ast:
@@ -314,7 +310,6 @@ def cluster_and_intersect(
                         is_subset = True
                         break
                 if not is_subset:
-                    logging.info("recommending")
                     logging.info("Pruning {len} {t}".format(
                         len=len(tuple), t=tuple))
                     pruned_record = candidate_records[tuple[0]][0]
