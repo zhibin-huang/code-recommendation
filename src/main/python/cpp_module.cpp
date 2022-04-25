@@ -1,8 +1,9 @@
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+
 #include <algorithm>
 #include <mutex>
 #include <nlohmann/json.hpp>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11_json/pybind11_json.hpp>
 #include <thread>
 #include <tuple>
@@ -17,7 +18,7 @@ using json = nl::json;
 using candidate_tuple = tuple<json, double, json, double>;
 using clustered_record = vector<json>;
 
-inline double jaccard(const counter &counter1, const counter &counter2) {
+double jaccard(const counter &counter1, const counter &counter2) {
   int a = 0, b = 0;
   auto j = counter1.begin();
   for (auto i = counter2.begin(); i != counter2.end(); ++i) {
@@ -34,8 +35,7 @@ inline double jaccard(const counter &counter1, const counter &counter2) {
     if (j != counter1.end() && !counter2.count(j->first)) {
       b += j->second;
     }
-    if (j != counter1.end())
-      j++;
+    if (j != counter1.end()) j++;
   }
   while (j != counter1.end()) {
     if (!counter2.count(j->first)) {
@@ -46,7 +46,7 @@ inline double jaccard(const counter &counter1, const counter &counter2) {
   return 1.0 * a / b;
 }
 
-inline counter union_counter(counter counter1, counter counter2) {
+counter union_counter(counter counter1, counter counter2) {
   for (auto &i : counter2) {
     if (counter1.count(i.first))
       counter1[i.first] += i.second;
@@ -56,7 +56,7 @@ inline counter union_counter(counter counter1, counter counter2) {
   return counter1;
 }
 
-inline counter list_toCounter(const vector<int> &list) {
+counter list_toCounter(const vector<int> &list) {
   counter tmp;
   for (int i : list) {
     if (tmp.count(i))
@@ -67,7 +67,7 @@ inline counter list_toCounter(const vector<int> &list) {
   return tmp;
 }
 
-inline json copy_leaf_dummy(const json &ast) {
+json copy_leaf_dummy(const json &ast) {
   json j;
   j["token"] = "...";
   j["leading"] = ast["leading"];
@@ -158,8 +158,7 @@ json prune_last_jd(const vector<json> &records, const json &record2) {
           counter new_feautures_count =
               union_counter(current_features_count, leaf_features_count);
           double tmp = jaccard(features1, new_feautures_count);
-          if (tmp > max)
-            max = tmp, max_idx = i;
+          if (tmp > max) max = tmp, max_idx = i;
         }
         i++;
       }
@@ -174,10 +173,11 @@ json prune_last_jd(const vector<json> &records, const json &record2) {
     }
   }
   int leaf_idx = 0;
-  json prune_ast_ = get<0>(prune_ast(record2["ast"], out_features, leaf_idx));
+  json prune_ast_ =
+      std::move(get<0>(prune_ast(record2["ast"], out_features, leaf_idx)));
   py::object result = collect_features_as_list(prune_ast_, false, false);
   vector<int> pruned_features = result.cast<vector<int>>();
-  json res = json(record2);
+  json res = std::move(record2);
   res["ast"] = prune_ast_;
   res["features"] = pruned_features;
   res["index"] = -1;
@@ -190,15 +190,15 @@ vector<candidate_tuple> prune_parallel(const json &query_record,
                                        const vector<double> &scores) {
   vector<candidate_tuple> candidate_records;
   for (int i = 0; i < similar_records.size(); i++) {
-    [&](nl::json similar_record, double score) {
+    [&](const nl::json &similar_record, double score) {
       nl::json pruned_record =
           prune_last_jd(vector<json>(1, query_record), similar_record);
       counter c1 = list_toCounter(query_record["features"]),
               c2 = list_toCounter(pruned_record["features"]);
       double prune_score = jaccard(c1, c2);
       if (prune_score > min_pruned_score) {
-        candidate_records.push_back(
-            candidate_tuple(similar_record, score, pruned_record, prune_score));
+        candidate_records.emplace_back(similar_record, score, pruned_record,
+                                       prune_score);
       }
     }(similar_records[i], scores[i]);
   }
@@ -241,11 +241,11 @@ vector<clustered_record> cluster_and_intersect(
           // py::object find_similarity_score_features_set_un =
           // recommand.attr("find_similarity_score_features_set_un");
           int csq = find_similarity_score_features_set_un(
-              prune_record_list); //.cast<int>();
+              prune_record_list);  //.cast<int>();
           double pscore = 1.0 * csq / qlen;
           if (pscore > threshold1) {
             int cs = find_similarity_score_features_set_un(
-                original_record_list); //.cast<int>();
+                original_record_list);  //.cast<int>();
             if (cs > threshold2 * csq && cs > maxscore) {
               kmax = k;
               maxscore = cs;
@@ -277,7 +277,7 @@ vector<clustered_record> cluster_and_intersect(
           }
         }
         if (!is_subset) {
-          json pruned_record = get<2>(candidate_records[tuple[0]]);
+          json pruned_record = std::move(get<2>(candidate_records[tuple[0]]));
           for (int j = 1; j < tuple.size(); ++j) {
             pruned_record = prune_last_jd(
                 vector<json>{query_record, get<0>(candidate_records[tuple[j]])},
@@ -296,7 +296,7 @@ vector<clustered_record> cluster_and_intersect(
 }
 
 PYBIND11_MODULE(cpp_module, m) {
-  m.doc() = "support effective computting in recommending process!";
+  m.doc() = "support effective computing in recommending process!";
   m.def("jaccard", &jaccard);
   m.def("prune_last_jd", &prune_last_jd);
   m.def("prune_parallel", &prune_parallel);
