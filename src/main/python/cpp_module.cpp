@@ -18,42 +18,29 @@ using json = nl::json;
 using candidate_tuple = tuple<json, double, json, double>;
 using clustered_record = vector<json>;
 
-double jaccard(const counter &counter1, const counter &counter2) {
+double jaccard(const counter &c, const counter &other) {
   int a = 0, b = 0;
-  auto j = counter1.begin();
-  for (auto i = counter2.begin(); i != counter2.end(); ++i) {
-    int key = i->first, value = i->second;
-    // 1 和 2 都有
-    if (counter1.count(key)) {
-      a += std::min(counter1.at(key), value);
-      b += std::max(counter1.at(key), value);
-    }
-    // 2 有， 1 没有
-    else
-      b += value;
-    // 1 有， 2 没有
-    if (j != counter1.end() && !counter2.count(j->first)) {
-      b += j->second;
-    }
-    if (j != counter1.end()) j++;
+  for (auto i = c.begin(); i != c.end(); i++) {
+    if (other.count(i->first)) {
+      a += min(i->second, other.at(i->first));
+      b += max(i->second, other.at(i->first));
+    } else
+      b += i->second;
   }
-  while (j != counter1.end()) {
-    if (!counter2.count(j->first)) {
-      b += j->second;
-    }
-    j++;
+  for (auto i = other.begin(); i != other.end(); i++) {
+    if (c.count(i->first) == 0) b += i->second;
   }
   return 1.0 * a / b;
 }
 
-counter union_counter(counter counter1, counter counter2) {
-  for (auto &i : counter2) {
-    if (counter1.count(i.first))
-      counter1[i.first] += i.second;
+counter union_counter(counter c, counter other) {
+  for (auto &i : other) {
+    if (c.count(i.first))
+      c[i.first] += i.second;
     else
-      counter1[i.first] = i.second;
+      c[i.first] = i.second;
   }
-  return counter1;
+  return c;
 }
 
 counter list_toCounter(const vector<int> &list) {
